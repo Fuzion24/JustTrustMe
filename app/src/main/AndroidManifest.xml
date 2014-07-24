@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="just.trust.me" >
+
+    <meta-data android:value="true" android:name="xposedmodule"/>
+    <meta-data android:value="2.0*" android:name="xposedminversion"/>
+    <meta-data android:value="Assists in removing DRM from the Amazon books you own" android:name="xposeddescription"/>
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme" >
+    </application>
+
+</manifest>
