@@ -2,8 +2,6 @@ package just.trust.me;
 
 import javax.net.ssl.SSLSocketFactory;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Method;
 import java.net.Socket;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
@@ -18,15 +16,11 @@ import javax.net.ssl.X509TrustManager;
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XC_MethodReplacement;
-import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
-
 
 import static de.robv.android.xposed.XposedHelpers.findAndHookMethod;
 
-
 public class Main implements IXposedHookLoadPackage {
-
 
     public void handleLoadPackage(final LoadPackageParam lpparam) throws Throwable {
 
@@ -37,7 +31,7 @@ public class Main implements IXposedHookLoadPackage {
             }
         });
 
-        findAndHookMethod("javax.net.ssl.SSLContext", lpparam.classLoader, "init", new XC_MethodHook() {
+        findAndHookMethod("javax.net.ssl.SSLContext", lpparam.classLoader, "init", KeyManager[].class, TrustManager[].class, SecureRandom.class, new XC_MethodHook() {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                 param.args[0] = null;
@@ -47,7 +41,7 @@ public class Main implements IXposedHookLoadPackage {
         });
 
 
-        findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setSSLSocketFactory", new XC_MethodHook() {
+        findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setSSLSocketFactory", SSLSocketFactory.class, new XC_MethodHook() {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                 super.beforeHookedMethod(param);
@@ -58,21 +52,21 @@ public class Main implements IXposedHookLoadPackage {
         });
 
 
-        findAndHookMethod("org.apache.http.conn.ssl.SSLSocketFactory", lpparam.classLoader, "isSecure", new XC_MethodReplacement() {
+        findAndHookMethod("org.apache.http.conn.ssl.SSLSocketFactory", lpparam.classLoader, "isSecure", Socket.class, new XC_MethodReplacement() {
             @Override
             protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
                 return true;
             }
         });
 
-        findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setHostnameVerifier", new XC_MethodHook() {
+        findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setHostnameVerifier", HostnameVerifier.class, new XC_MethodHook() {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                 param.args[0] = org.apache.http.conn.ssl.SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER;
             }
         });
 
-        findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setDefaultHostnameVerifier", new XC_MethodHook() {
+        findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setDefaultHostnameVerifier", HostnameVerifier.class, new XC_MethodHook() {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                 param.args[0] = org.apache.http.conn.ssl.SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER;
