@@ -72,6 +72,19 @@ public class Main implements IXposedHookLoadPackage {
                 param.args[0] = org.apache.http.conn.ssl.SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER;
             }
         });
+
+        // Trick for WebViews
+        findAndHookMethod("android.webkit.WebViewClient", lpparam.classLoader, "onReceivedSslError", HostnameVerifier.class, new XC_MethodReplacement() {
+            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                ((android.webkit.SslErrorHandler)param.args[1]).proceed();
+                return null;
+            }
+        });
+        findAndHookMethod("android.webkit.WebViewClient", lpparam.classLoader, "onReceivedError", HostnameVerifier.class,new XC_MethodReplacement() {
+            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                return null;
+            }
+        });
     }
 
     class ImSureItsLegitTrustManager implements X509TrustManager {
