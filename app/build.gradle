@@ -4,7 +4,7 @@ android {
     compileSdkVersion 20
     buildToolsVersion '20.0.0'
     defaultConfig {
-        applicationId 'me.trust.just.justtrustme'
+        applicationId 'just.trust.me'
         minSdkVersion 16
         targetSdkVersion 20
         versionCode 1
@@ -14,7 +14,6 @@ android {
     buildTypes {
         release {
             runProguard false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
     productFlavors {
