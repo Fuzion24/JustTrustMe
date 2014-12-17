@@ -16,7 +16,6 @@ import java.security.cert.X509Certificate;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManager;
@@ -38,7 +37,6 @@ import org.apache.http.params.HttpParams;
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XC_MethodReplacement;
-import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
 import static de.robv.android.xposed.XposedHelpers.callMethod;
@@ -158,7 +156,7 @@ public class Main implements IXposedHookLoadPackage {
 
         /* libcore/luni/src/main/java/javax/net/ssl/HttpsURLConnection.java */
         /* public void setSSLSocketFactory(SSLSocketFactory) */
-        findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setSSLSocketFactory", SSLSocketFactory.class, 
+        findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setSSLSocketFactory", javax.net.ssl.SSLSocketFactory.class,
                             new XC_MethodReplacement() {
             @Override
             protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
@@ -190,9 +188,9 @@ public class Main implements IXposedHookLoadPackage {
         });
 
         /* frameworks/base/core/java/android/webkit/WebViewClient.java */
-        /* public voidonReceivedError(WebView, int, String, String) */
+        /* public void onReceivedError(WebView, int, String, String) */
         findAndHookMethod("android.webkit.WebViewClient", lpparam.classLoader, "onReceivedError",
-                            WebView.class, Integer.class, String.class, String.class, new XC_MethodReplacement() {
+                            WebView.class, int.class, String.class, String.class, new XC_MethodReplacement() {
             @Override
             protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
                 return null;
