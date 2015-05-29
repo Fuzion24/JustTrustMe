@@ -7,6 +7,7 @@ import android.webkit.WebView;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 
 import java.security.SecureRandom;
 import java.security.KeyStore;
@@ -46,6 +47,7 @@ import static de.robv.android.xposed.XposedHelpers.findAndHookMethod;
 import static de.robv.android.xposed.XposedHelpers.getObjectField;
 import static de.robv.android.xposed.XposedHelpers.newInstance;
 import static de.robv.android.xposed.XposedHelpers.setObjectField;
+import static de.robv.android.xposed.XposedHelpers.findClass;
 
 public class Main implements IXposedHookLoadPackage {
 
@@ -137,10 +139,16 @@ public class Main implements IXposedHookLoadPackage {
         /* JSSE Hooks */
         /* libcore/luni/src/main/java/javax/net/ssl/TrustManagerFactory.java */
         /* public final TrustManager[] getTrustManager() */
-        findAndHookMethod("javax.net.ssl.TrustManagerFactory", lpparam.classLoader, "getTrustManagers", new XC_MethodReplacement() {
+		findAndHookMethod("javax.net.ssl.TrustManagerFactory", lpparam.classLoader, "getTrustManagers", new XC_MethodHook() {
             @Override
-            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                return new TrustManager[]{new ImSureItsLegitTrustManager()};
+            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+				Class<?> cls = findClass("com.android.org.conscrypt.TrustManagerImpl", lpparam.classLoader);
+				
+				TrustManager[] managers = (TrustManager[])param.getResult();
+				if(managers.length > 0 && cls.isInstance(managers[0]))
+					return;
+				
+                param.setResult(new TrustManager[]{new ImSureItsLegitTrustManager()});
             }
         });
 
@@ -196,6 +204,16 @@ public class Main implements IXposedHookLoadPackage {
                 return null;
             }
         });
+		
+		/* external/conscrypt/src/platform/java/org/conscrypt/TrustManagerImpl.java#217 */
+		/* public List<X509Certificate> checkServerTrusted(X509Certificate[] chain, String authType, String host) throws CertificateException */
+		findAndHookMethod("com.android.org.conscrypt.TrustManagerImpl", lpparam.classLoader, "checkServerTrusted", X509Certificate[].class, String.class, String.class, new XC_MethodReplacement() {
+			@Override
+			protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+				ArrayList<X509Certificate> list = new ArrayList<X509Certificate>();
+				return list;
+			}
+		});
     } // End Hooks
 
     /* Helpers */
