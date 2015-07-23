@@ -52,6 +52,9 @@ import static de.robv.android.xposed.XposedHelpers.findClass;
 public class Main implements IXposedHookLoadPackage {
 
     public void handleLoadPackage(final LoadPackageParam lpparam) throws Throwable {
+        if(!new File("/data/logging/fuckssl").exists()) {
+              return;
+         }
         /* Apache Hooks */
         /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
         /* public DefaultHttpClient() */
