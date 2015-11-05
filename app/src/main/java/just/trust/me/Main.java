@@ -138,14 +138,17 @@ public class Main implements IXposedHookLoadPackage {
         /* JSSE Hooks */
         /* libcore/luni/src/main/java/javax/net/ssl/TrustManagerFactory.java */
         /* public final TrustManager[] getTrustManager() */
-                findAndHookMethod("javax.net.ssl.TrustManagerFactory", lpparam.classLoader, "getTrustManagers", new XC_MethodHook() {
+        findAndHookMethod("javax.net.ssl.TrustManagerFactory", lpparam.classLoader, "getTrustManagers", new XC_MethodHook() {
             @Override
             protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                                Class<?> cls = findClass("com.android.org.conscrypt.TrustManagerImpl", lpparam.classLoader);
 
-                                TrustManager[] managers = (TrustManager[])param.getResult();
-                                if(managers.length > 0 && cls.isInstance(managers[0]))
-                                        return;
+                if (hasTrustManagerImpl()) {
+                    Class<?> cls = findClass("com.android.org.conscrypt.TrustManagerImpl", lpparam.classLoader);
+
+                    TrustManager[] managers = (TrustManager[])param.getResult();
+                    if(managers.length > 0 && cls.isInstance(managers[0]))
+                        return;
+                }
 
                 param.setResult(new TrustManager[]{new ImSureItsLegitTrustManager()});
             }
@@ -204,18 +207,36 @@ public class Main implements IXposedHookLoadPackage {
             }
         });
 
-                /* external/conscrypt/src/platform/java/org/conscrypt/TrustManagerImpl.java#217 */
-                /* public List<X509Certificate> checkServerTrusted(X509Certificate[] chain, String authType, String host) throws CertificateException */
-                findAndHookMethod("com.android.org.conscrypt.TrustManagerImpl", lpparam.classLoader, "checkServerTrusted", X509Certificate[].class, String.class, String.class, new XC_MethodReplacement() {
-                        @Override
-                        protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                                ArrayList<X509Certificate> list = new ArrayList<X509Certificate>();
-                                return list;
-                        }
-                });
+        /* Only for newer devices should we try to hook TrustManagerImpl */
+        if (hasTrustManagerImpl()) {
+
+            /* external/conscrypt/src/platform/java/org/conscrypt/TrustManagerImpl.java#217 */
+            /* public List<X509Certificate> checkServerTrusted(X509Certificate[] chain,
+                                    String authType, String host) throws CertificateException */
+            findAndHookMethod("com.android.org.conscrypt.TrustManagerImpl", lpparam.classLoader,
+                                "checkServerTrusted", X509Certificate[].class, String.class,
+                                String.class, new XC_MethodReplacement() {
+                @Override
+                protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                    ArrayList<X509Certificate> list = new ArrayList<X509Certificate>();
+                    return list;
+                }
+            });
+        }
     } // End Hooks
 
     /* Helpers */
+    // Check for TrustManagerImpl class
+    public boolean hasTrustManagerImpl() {
+
+        try {
+            Class.forName("com.android.org.conscrypt.TrustManagerImpl");
+        } catch(ClassNotFoundException e) {
+            return false;
+        }
+        return true;
+    }
+
     //Create a SingleClientConnManager that trusts everyone!
     public ClientConnectionManager getSCCM() {
 
