@@ -138,14 +138,17 @@ public class Main implements IXposedHookLoadPackage {
         /* JSSE Hooks */
         /* libcore/luni/src/main/java/javax/net/ssl/TrustManagerFactory.java */
         /* public final TrustManager[] getTrustManager() */
-                findAndHookMethod("javax.net.ssl.TrustManagerFactory", lpparam.classLoader, "getTrustManagers", new XC_MethodHook() {
+        findAndHookMethod("javax.net.ssl.TrustManagerFactory", lpparam.classLoader, "getTrustManagers", new XC_MethodHook() {
             @Override
             protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                                Class<?> cls = findClass("com.android.org.conscrypt.TrustManagerImpl", lpparam.classLoader);
 
-                                TrustManager[] managers = (TrustManager[])param.getResult();
-                                if(managers.length > 0 && cls.isInstance(managers[0]))
-                                        return;
+                if (hasTrustManagerImpl()) {
+                    Class<?> cls = findClass("com.android.org.conscrypt.TrustManagerImpl", lpparam.classLoader);
+
+                    TrustManager[] managers = (TrustManager[])param.getResult();
+                    if(managers.length > 0 && cls.isInstance(managers[0]))
+                        return;
+                }
 
                 param.setResult(new TrustManager[]{new ImSureItsLegitTrustManager()});
             }
