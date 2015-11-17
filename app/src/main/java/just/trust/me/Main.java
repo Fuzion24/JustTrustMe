@@ -206,6 +206,19 @@ public class Main implements IXposedHookLoadPackage {
                 return null;
             }
         });
+        
+        /* hooking OKHTTP by SQUAREUP */
+        /* com/squareup/okhttp/CertificatePinner.java available online @ https://github.com/square/okhttp/blob/master/okhttp/src/main/java/com/squareup/okhttp/CertificatePinner.java */
+        /*public void check(String hostname, List<Certificate> peerCertificates)
+      throws SSLPeerUnverifiedException{}*/
+      /* Either returns true or a exception so blanket return true */
+      /* Tested against version 2.5 */
+        findAndHookMethod("com.squareup.okhttp.CertificatePinner", lpparam.classLoader, "check", String.class, List.class, new XC_MethodReplacement() {
+            @Override
+            protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
+                return true;
+            }
+        });
 
         /* Only for newer devices should we try to hook TrustManagerImpl */
         if (hasTrustManagerImpl()) {
