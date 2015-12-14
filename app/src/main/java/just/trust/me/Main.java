@@ -214,12 +214,18 @@ public class Main implements IXposedHookLoadPackage {
       throws SSLPeerUnverifiedException{}*/
       /* Either returns true or a exception so blanket return true */
       /* Tested against version 2.5 */
-        findAndHookMethod("com.squareup.okhttp.CertificatePinner", lpparam.classLoader, "check", String.class, List.class, new XC_MethodReplacement() {
-            @Override
-            protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
-                return true;
-            }
-        });
+
+        try {
+            Class.forName("com.squareup.okhttp.CertificatePinner");
+            findAndHookMethod("com.squareup.okhttp.CertificatePinner", lpparam.classLoader, "check", String.class, List.class, new XC_MethodReplacement() {
+                @Override
+                protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
+                    return true;
+                }
+            });
+        } catch(ClassNotFoundException e) {
+            // pass
+        }
 
         /* Only for newer devices should we try to hook TrustManagerImpl */
         if (hasTrustManagerImpl()) {
