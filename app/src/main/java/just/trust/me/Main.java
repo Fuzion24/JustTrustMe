@@ -1,6 +1,7 @@
 package just.trust.me;
 
 import android.net.http.SslError;
+import android.util.Log;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebView;
 
@@ -51,6 +52,8 @@ import static de.robv.android.xposed.XposedHelpers.setObjectField;
 import static de.robv.android.xposed.XposedHelpers.findClass;
 
 public class Main implements IXposedHookLoadPackage {
+
+    private static final String TAG = "JustTrustMe";
 
     public void handleLoadPackage(final LoadPackageParam lpparam) throws Throwable {
         /* Apache Hooks */
@@ -225,6 +228,7 @@ public class Main implements IXposedHookLoadPackage {
             });
         } catch(ClassNotFoundException e) {
             // pass
+            Log.d(TAG, "OKHTTP 2.5 not found -- not hooking");
         }
 
         //https://github.com/square/okhttp/blob/parent-3.0.1/okhttp/src/main/java/okhttp3/CertificatePinner.java#L144
@@ -237,7 +241,7 @@ public class Main implements IXposedHookLoadPackage {
                 }
             });
         } catch(ClassNotFoundException e) {
-            
+            Log.d(TAG, "OKHTTP 3.x not found -- not hooking");
             // pass
         }
 
