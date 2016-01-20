@@ -227,6 +227,21 @@ public class Main implements IXposedHookLoadPackage {
             // pass
         }
 
+        //https://github.com/square/okhttp/blob/parent-3.0.1/okhttp/src/main/java/okhttp3/CertificatePinner.java#L144
+        try {
+            Class.forName("okhttp3.CertificatePinner");
+            findAndHookMethod("okhttp3.CertificatePinner", lpparam.classLoader, "check", String.class, List.class, new XC_MethodReplacement() {
+                @Override
+                protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
+                    return null;
+                }
+            });
+        } catch(ClassNotFoundException e) {
+            
+            // pass
+        }
+
+
         /* Only for newer devices should we try to hook TrustManagerImpl */
         if (hasTrustManagerImpl()) {
 
