@@ -236,7 +236,7 @@ public class Main implements IXposedHookLoadPackage {
         Log.d(TAG, "Hooking com.squareup.okhttp.CertificatePinner.check(String,List) (2.5) for: " + lpparam.packageName);
 
         try {
-            Class.forName("com.squareup.okhttp.CertificatePinner");
+            lpparam.classLoader.loadClass("com.squareup.okhttp.CertificatePinner");
             findAndHookMethod("com.squareup.okhttp.CertificatePinner", lpparam.classLoader, "check", String.class, List.class, new XC_MethodReplacement() {
                 @Override
                 protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
@@ -252,7 +252,7 @@ public class Main implements IXposedHookLoadPackage {
         Log.d(TAG, "Hooking okhttp3.CertificatePinner.check(String,List) (3.x) for: " + lpparam.packageName);
 
         try {
-            Class.forName("okhttp3.CertificatePinner");
+            lpparam.classLoader.loadClass("okhttp3.CertificatePinner");
             findAndHookMethod("okhttp3.CertificatePinner", lpparam.classLoader, "check", String.class, List.class, new XC_MethodReplacement() {
                 @Override
                 protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
@@ -260,7 +260,7 @@ public class Main implements IXposedHookLoadPackage {
                 }
             });
         } catch(ClassNotFoundException e) {
-            Log.d(TAG, "OKHTTP 3.x not found in "  + lpparam.packageName  + " -- not hooking");
+            Log.d(TAG, "OKHTTP 3.x not found in " + lpparam.packageName + " -- not hooking");
             // pass
         }
 
