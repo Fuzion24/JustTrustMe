@@ -264,6 +264,35 @@ public class Main implements IXposedHookLoadPackage {
             // pass
         }
 
+        //https://github.com/square/okhttp/blob/parent-3.0.1/okhttp/src/main/java/okhttp3/internal/tls/OkHostnameVerifier.java
+        try {
+            lpparam.classLoader.loadClass("okhttp3.internal.tls.OkHostnameVerifier");
+            findAndHookMethod("okhttp3.internal.tls.OkHostnameVerifier", lpparam.classLoader, "verify", String.class, javax.net.ssl.SSLSession.class, new XC_MethodReplacement() {
+                @Override
+                protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
+                    return true;
+                }
+            });
+        } catch(ClassNotFoundException e) {
+            Log.d(TAG, "OKHTTP 3.x not found in " + lpparam.packageName + " -- not hooking OkHostnameVerifier.verify(String, SSLSession)");
+            // pass
+        }
+
+        //https://github.com/square/okhttp/blob/parent-3.0.1/okhttp/src/main/java/okhttp3/internal/tls/OkHostnameVerifier.java
+        try {
+            lpparam.classLoader.loadClass("okhttp3.internal.tls.OkHostnameVerifier");
+            findAndHookMethod("okhttp3.internal.tls.OkHostnameVerifier", lpparam.classLoader, "verify", String.class, java.security.cert.X509Certificate.class, new XC_MethodReplacement() {
+                @Override
+                protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
+                    return true;
+                }
+            });
+        } catch(ClassNotFoundException e) {
+            Log.d(TAG, "OKHTTP 3.x not found in " + lpparam.packageName + " -- not hooking OkHostnameVerifier.verify(String, X509)(");
+            // pass
+        }
+
+
 
         /* Only for newer devices should we try to hook TrustManagerImpl */
         if (hasTrustManagerImpl()) {
