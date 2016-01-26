@@ -14,12 +14,15 @@ You can download the xposed framework [here](http://repo.xposed.info/module/de.r
 
 ### Install from binary
 
-```
-adb install ./bin/JustTrustMe.apk
-```
-or navigate here and download the APK on your phone:
+The JustTrustMe binary can be downloaded from here: 
+`https://github.com/Fuzion24/JustTrustMe/releases/latest`
 
-[https://github.com/Fuzion24/JustTrustMe/blob/master/bin/JustTrustMe.apk?raw=true](https://github.com/Fuzion24/JustTrustMe/blob/master/bin/JustTrustMe.apk?raw=true)
+```
+adb install ./JustTrustMe.apk
+```
+
+or navigate here and download the APK on your phone:
+`https://github.com/Fuzion24/JustTrustMe/releases/latest`
 
 
 ### Build from Source
