@@ -1,4 +1,5 @@
 *.iml
+/bin/
 app/build/
 app/src/main/bin/
 app/src/main/gen/
