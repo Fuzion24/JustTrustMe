@@ -60,6 +60,9 @@ public class Main implements IXposedHookLoadPackage {
     public void handleLoadPackage(final LoadPackageParam lpparam) throws Throwable {
 
         currentPackageName = lpparam.packageName;
+
+
+
         /* Apache Hooks */
         /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
         /* public DefaultHttpClient() */
@@ -241,6 +244,7 @@ public class Main implements IXposedHookLoadPackage {
                     // Hook OkHttp or third party libraries.
                     Context context = (Context) param.args[0];
                     processOkHttp(context.getClassLoader());
+                    processHttpClientAndroidLib(context.getClassLoader());
                 }
             }
         );
@@ -424,6 +428,27 @@ public class Main implements IXposedHookLoadPackage {
         } catch(ClassNotFoundException e) {
             Log.d(TAG, "OKHTTP 3.x not found in " + currentPackageName + " -- not hooking OkHostnameVerifier.verify(String, X509)(");
             // pass
+        }
+    }
+
+    void processHttpClientAndroidLib(ClassLoader classLoader) {
+        /* httpclientandroidlib Hooks */
+        /* public final void verify(String host, String[] cns, String[] subjectAlts, boolean strictWithSubDomains) throws SSLException */
+        Log.d(TAG, "Hooking AbstractVerifier.verify(String, String[], String[], boolean) for: " + currentPackageName);
+
+        try {
+            classLoader.loadClass("ch.boye.httpclientandroidlib.conn.ssl.AbstractVerifier");
+            findAndHookMethod("ch.boye.httpclientandroidlib.conn.ssl.AbstractVerifier", classLoader, "verify",
+                    String.class, String[].class, String[].class, boolean.class,
+                    new XC_MethodReplacement() {
+                        @Override
+                        protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
+                            return null;
+                        }
+                    });
+        } catch (ClassNotFoundException e) {
+            // pass
+            Log.d(TAG, "httpclientandroidlib not found in "  + currentPackageName  + "-- not hooking");
         }
     }
 
