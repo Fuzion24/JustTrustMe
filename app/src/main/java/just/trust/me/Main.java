@@ -6,37 +6,37 @@ import android.util.Log;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebView;
 
-import java.io.IOException;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
-
-import java.security.SecureRandom;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.scheme.HostNameResolver;
 import org.apache.http.conn.scheme.PlainSocketFactory;
-import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.scheme.Scheme;
+import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.SingleClientConnManager;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.HttpParams;
+
+import java.io.IOException;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
@@ -47,10 +47,10 @@ import static de.robv.android.xposed.XposedHelpers.callMethod;
 import static de.robv.android.xposed.XposedHelpers.callStaticMethod;
 import static de.robv.android.xposed.XposedHelpers.findAndHookConstructor;
 import static de.robv.android.xposed.XposedHelpers.findAndHookMethod;
+import static de.robv.android.xposed.XposedHelpers.findClass;
 import static de.robv.android.xposed.XposedHelpers.getObjectField;
 import static de.robv.android.xposed.XposedHelpers.newInstance;
 import static de.robv.android.xposed.XposedHelpers.setObjectField;
-import static de.robv.android.xposed.XposedHelpers.findClass;
 
 public class Main implements IXposedHookLoadPackage {
 
@@ -251,21 +251,46 @@ public class Main implements IXposedHookLoadPackage {
 
         /* Only for newer devices should we try to hook TrustManagerImpl */
         if (hasTrustManagerImpl()) {
+            /* TrustManagerImpl Hooks */
+            /* external/conscrypt/src/platform/java/org/conscrypt/TrustManagerImpl.java */
+            Log.d(TAG, "Hooking com.android.org.conscrypt.TrustManagerImpl for: " + currentPackageName);
 
-            /* external/conscrypt/src/platform/java/org/conscrypt/TrustManagerImpl.java#217 */
+            /* public void checkServerTrusted(X509Certificate[] chain, String authType) */
+            findAndHookMethod("com.android.org.conscrypt.TrustManagerImpl", lpparam.classLoader,
+                    "checkServerTrusted", X509Certificate[].class, String.class,
+                    new XC_MethodReplacement() {
+                        @Override
+                        protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                            return 0;
+                        }
+                    });
+
             /* public List<X509Certificate> checkServerTrusted(X509Certificate[] chain,
                                     String authType, String host) throws CertificateException */
-            Log.d(TAG, "Hooking com.android.org.conscrypt.TrustManagerImpl.checkServerTrusted(X509Certificate[]) for: " + currentPackageName);
             findAndHookMethod("com.android.org.conscrypt.TrustManagerImpl", lpparam.classLoader,
-                                "checkServerTrusted", X509Certificate[].class, String.class,
-                                String.class, new XC_MethodReplacement() {
-                @Override
-                protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                    ArrayList<X509Certificate> list = new ArrayList<X509Certificate>();
-                    return list;
-                }
-            });
-        }
+                    "checkServerTrusted", X509Certificate[].class, String.class,
+                    String.class, new XC_MethodReplacement() {
+                        @Override
+                        protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                            ArrayList<X509Certificate> list = new ArrayList<X509Certificate>();
+                            return list;
+                        }
+                    });
+
+
+            /* public List<X509Certificate> checkServerTrusted(X509Certificate[] chain,
+                                    String authType, SSLSession session) throws CertificateException */
+            findAndHookMethod("com.android.org.conscrypt.TrustManagerImpl", lpparam.classLoader,
+                    "checkServerTrusted", X509Certificate[].class, String.class,
+                    SSLSession.class, new XC_MethodReplacement() {
+                        @Override
+                        protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                            ArrayList<X509Certificate> list = new ArrayList<X509Certificate>();
+                            return list;
+                        }
+                    });
+         }
+
     } // End Hooks
 
     /* Helpers */
