@@ -1,7 +1,7 @@
 JustTrustMe
 ===========
 
-An xposed module that disables SSL certificate checking.  This is useful for auditing an application which does certificate pinning.  You can read about the practice of cert pinning [here](https://viaforensics.com/resources/reports/best-practices-ios-android-secure-mobile-development/41-certificate-pinning/). There also exists a nice framework built by @moxie to aid in pinning certs in your app: [certificate pinning](https://github.com/moxie0/AndroidPinning). 
+An xposed module that disables SSL certificate checking.  This is useful for auditing an application which does certificate pinning.  There also exists a nice framework built by @moxie to aid in pinning certs in your app: [certificate pinning](https://github.com/moxie0/AndroidPinning). 
 
 An example of an application that does cert pinning is [Twitter](https://play.google.com/store/apps/details?id=com.twitter.android).  If you would like to view the network traffic for this application, you must disable the certificate pinning.
 
