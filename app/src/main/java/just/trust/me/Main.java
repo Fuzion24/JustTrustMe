@@ -534,6 +534,11 @@ public class Main implements IXposedHookLoadPackage {
         public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
         }
 
+	public List<X509Certificate> checkServerTrusted(X509Certificate[] chain, String authType, String host) throws CertificateException {
+		ArrayList<X509Certificate> list = new ArrayList<X509Certificate>();
+		return list;
+	}
+
         @Override
         public X509Certificate[] getAcceptedIssuers() {
             return new X509Certificate[0];
