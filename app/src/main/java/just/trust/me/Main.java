@@ -502,6 +502,28 @@ public class Main implements IXposedHookLoadPackage {
             Log.d(TAG, "OKHTTP 3.x not found in " + currentPackageName + " -- not hooking OkHostnameVerifier.verify(String, X509)(");
             // pass
         }
+
+        //https://github.com/square/okhttp/blob/okhttp_4.2.x/okhttp/src/main/java/okhttp3/CertificatePinner.kt
+        Log.d(TAG, "Hooking okhttp3.CertificatePinner.check(String,List) (4.2.0+) for: " + currentPackageName);
+
+        try {
+            classLoader.loadClass("okhttp3.CertificatePinner");
+            findAndHookMethod("okhttp3.CertificatePinner",
+                    classLoader,
+                    "check$okhttp",
+                    String.class,
+                    "kotlin.jvm.functions.Function0",
+                    new XC_MethodReplacement() {
+                        @Override
+                        protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
+                            return null;
+                        }
+                    });
+        } catch (ClassNotFoundException e) {
+            Log.d(TAG, "OKHTTP 4.2.0+ not found in " + currentPackageName + " -- not hooking");
+            // pass
+        }
+
     }
 
     void processHttpClientAndroidLib(ClassLoader classLoader) {
