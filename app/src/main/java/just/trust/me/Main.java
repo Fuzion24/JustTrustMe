@@ -43,6 +43,7 @@ import javax.net.ssl.X509TrustManager;
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XC_MethodReplacement;
+import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
 import static de.robv.android.xposed.XposedHelpers.callMethod;
@@ -68,41 +69,45 @@ public class Main implements IXposedHookLoadPackage {
         /* Apache Hooks */
         /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
         /* public DefaultHttpClient() */
-        Log.d(TAG, "Hooking DefaultHTTPClient for: " + currentPackageName);
-        findAndHookConstructor(DefaultHttpClient.class, new XC_MethodHook() {
-            @Override
-            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+        try {
+            Log.d(TAG, "Hooking DefaultHTTPClient for: " + currentPackageName);
+            findAndHookConstructor(DefaultHttpClient.class, new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
 
-                setObjectField(param.thisObject, "defaultParams", null);
-                setObjectField(param.thisObject, "connManager", getSCCM());
-            }
-        });
+                    setObjectField(param.thisObject, "defaultParams", null);
+                    setObjectField(param.thisObject, "connManager", getSCCM());
+                }
+            });
 
-        /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
-        /* public DefaultHttpClient(HttpParams params) */
-        Log.d(TAG, "Hooking DefaultHTTPClient(HttpParams) for: " + currentPackageName);
-        findAndHookConstructor(DefaultHttpClient.class, HttpParams.class, new XC_MethodHook() {
-            @Override
-            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+            /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
+            /* public DefaultHttpClient(HttpParams params) */
+            Log.d(TAG, "Hooking DefaultHTTPClient(HttpParams) for: " + currentPackageName);
+            findAndHookConstructor(DefaultHttpClient.class, HttpParams.class, new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
 
-                setObjectField(param.thisObject, "defaultParams", (HttpParams) param.args[0]);
-                setObjectField(param.thisObject, "connManager", getSCCM());
-            }
-        });
+                    setObjectField(param.thisObject, "defaultParams", (HttpParams) param.args[0]);
+                    setObjectField(param.thisObject, "connManager", getSCCM());
+                }
+            });
 
-        /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
-        /* public DefaultHttpClient(ClientConnectionManager conman, HttpParams params) */
-        Log.d(TAG, "Hooking DefaultHTTPClient(ClientConnectionManager, HttpParams) for: " + currentPackageName);
-        findAndHookConstructor(DefaultHttpClient.class, ClientConnectionManager.class, HttpParams.class, new XC_MethodHook() {
-            @Override
-            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+            /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
+            /* public DefaultHttpClient(ClientConnectionManager conman, HttpParams params) */
+            Log.d(TAG, "Hooking DefaultHTTPClient(ClientConnectionManager, HttpParams) for: " + currentPackageName);
+            findAndHookConstructor(DefaultHttpClient.class, ClientConnectionManager.class, HttpParams.class, new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
 
-                HttpParams params = (HttpParams) param.args[1];
+                    HttpParams params = (HttpParams) param.args[1];
 
-                setObjectField(param.thisObject, "defaultParams", params);
-                setObjectField(param.thisObject, "connManager", getCCM(param.args[0], params));
-            }
-        });
+                    setObjectField(param.thisObject, "defaultParams", params);
+                    setObjectField(param.thisObject, "connManager", getCCM(param.args[0], params));
+                }
+            });
+        } catch (NoClassDefFoundError e) {
+            XposedBridge.log("NoClassDefFoundError");
+        }
 
         findAndHookMethod(X509TrustManagerExtensions.class, "checkServerTrusted", X509Certificate[].class, String.class, String.class, new XC_MethodReplacement() {
             @Override
@@ -121,43 +126,46 @@ public class Main implements IXposedHookLoadPackage {
         /* external/apache-http/src/org/apache/http/conn/ssl/SSLSocketFactory.java */
         /* public SSLSocketFactory( ... ) */
         Log.d(TAG, "Hooking SSLSocketFactory(String, KeyStore, String, KeyStore) for: " + currentPackageName);
-        findAndHookConstructor(SSLSocketFactory.class, String.class, KeyStore.class, String.class, KeyStore.class,
-                SecureRandom.class, HostNameResolver.class, new XC_MethodHook() {
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+        try {
+            findAndHookConstructor(SSLSocketFactory.class, String.class, KeyStore.class, String.class, KeyStore.class,
+                    SecureRandom.class, HostNameResolver.class, new XC_MethodHook() {
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
 
-                        String algorithm = (String) param.args[0];
-                        KeyStore keystore = (KeyStore) param.args[1];
-                        String keystorePassword = (String) param.args[2];
-                        SecureRandom random = (SecureRandom) param.args[4];
+                            String algorithm = (String) param.args[0];
+                            KeyStore keystore = (KeyStore) param.args[1];
+                            String keystorePassword = (String) param.args[2];
+                            SecureRandom random = (SecureRandom) param.args[4];
 
-                        KeyManager[] keymanagers = null;
-                        TrustManager[] trustmanagers = null;
+                            KeyManager[] keymanagers = null;
+                            TrustManager[] trustmanagers = null;
 
-                        if (keystore != null) {
-                            keymanagers = (KeyManager[]) callStaticMethod(SSLSocketFactory.class, "createKeyManagers", keystore, keystorePassword);
+                            if (keystore != null) {
+                                keymanagers = (KeyManager[]) callStaticMethod(SSLSocketFactory.class, "createKeyManagers", keystore, keystorePassword);
+                            }
+
+                            trustmanagers = new TrustManager[]{new ImSureItsLegitTrustManager()};
+
+                            setObjectField(param.thisObject, "sslcontext", SSLContext.getInstance(algorithm));
+                            callMethod(getObjectField(param.thisObject, "sslcontext"), "init", keymanagers, trustmanagers, random);
+                            setObjectField(param.thisObject, "socketfactory",
+                                    callMethod(getObjectField(param.thisObject, "sslcontext"), "getSocketFactory"));
                         }
 
-                        trustmanagers = new TrustManager[]{new ImSureItsLegitTrustManager()};
+                    });
+            /* external/apache-http/src/org/apache/http/conn/ssl/SSLSocketFactory.java */
+            /* public static SSLSocketFactory getSocketFactory() */
+            Log.d(TAG, "Hooking static SSLSocketFactory(String, KeyStore, String, KeyStore) for: " + currentPackageName);
+            findAndHookMethod("org.apache.http.conn.ssl.SSLSocketFactory", lpparam.classLoader, "getSocketFactory", new XC_MethodReplacement() {
+                @Override
+                protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                    return (SSLSocketFactory) newInstance(SSLSocketFactory.class);
+                }
+            });
+        } catch (NoClassDefFoundError e) {
+            XposedBridge.log("NoClassDefFoundError SSLSocketFactory HostNameResolver");
+        }
 
-                        setObjectField(param.thisObject, "sslcontext", SSLContext.getInstance(algorithm));
-                        callMethod(getObjectField(param.thisObject, "sslcontext"), "init", keymanagers, trustmanagers, random);
-                        setObjectField(param.thisObject, "socketfactory",
-                                callMethod(getObjectField(param.thisObject, "sslcontext"), "getSocketFactory"));
-                    }
-
-                });
-
-
-        /* external/apache-http/src/org/apache/http/conn/ssl/SSLSocketFactory.java */
-        /* public static SSLSocketFactory getSocketFactory() */
-        Log.d(TAG, "Hooking static SSLSocketFactory(String, KeyStore, String, KeyStore) for: " + currentPackageName);
-        findAndHookMethod("org.apache.http.conn.ssl.SSLSocketFactory", lpparam.classLoader, "getSocketFactory", new XC_MethodReplacement() {
-            @Override
-            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                return (SSLSocketFactory) newInstance(SSLSocketFactory.class);
-            }
-        });
 
         /* external/apache-http/src/org/apache/http/conn/ssl/SSLSocketFactory.java */
         /* public boolean isSecure(Socket) */
@@ -357,9 +365,7 @@ public class Main implements IXposedHookLoadPackage {
             SSLContext sslContext = SSLContext.getInstance("TLS");
             sslContext.init(null, new TrustManager[]{new ImSureItsLegitTrustManager()}, null);
             return sslContext.getSocketFactory();
-        } catch (NoSuchAlgorithmException e) {
-            return null;
-        } catch (KeyManagementException e) {
+        } catch (NoSuchAlgorithmException | KeyManagementException e) {
             return null;
         }
     }
@@ -543,7 +549,7 @@ public class Main implements IXposedHookLoadPackage {
             classLoader.loadClass("okhttp3.CertificatePinner");
             findAndHookMethod("okhttp3.CertificatePinner",
                     classLoader,
-                    "check$okhttp",
+                    "check",
                     String.class,
                     "kotlin.jvm.functions.Function0",
                     new XC_MethodReplacement() {
@@ -552,7 +558,7 @@ public class Main implements IXposedHookLoadPackage {
                             return null;
                         }
                     });
-        } catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException | NoSuchMethodError e) {
             Log.d(TAG, "OKHTTP 4.2.0+ not found in " + currentPackageName + " -- not hooking");
             // pass
         }
