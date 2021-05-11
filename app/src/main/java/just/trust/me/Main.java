@@ -43,6 +43,7 @@ import javax.net.ssl.X509TrustManager;
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XC_MethodReplacement;
+import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
 import static de.robv.android.xposed.XposedHelpers.callMethod;
@@ -68,41 +69,43 @@ public class Main implements IXposedHookLoadPackage {
         /* Apache Hooks */
         /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
         /* public DefaultHttpClient() */
-        Log.d(TAG, "Hooking DefaultHTTPClient for: " + currentPackageName);
-        findAndHookConstructor(DefaultHttpClient.class, new XC_MethodHook() {
-            @Override
-            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+        if (hasDefaultHTTPClient()) {
+            Log.d(TAG, "Hooking DefaultHTTPClient for: " + currentPackageName);
+            findAndHookConstructor(DefaultHttpClient.class, new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
 
-                setObjectField(param.thisObject, "defaultParams", null);
-                setObjectField(param.thisObject, "connManager", getSCCM());
-            }
-        });
+                    setObjectField(param.thisObject, "defaultParams", null);
+                    setObjectField(param.thisObject, "connManager", getSCCM());
+                }
+            });
 
-        /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
-        /* public DefaultHttpClient(HttpParams params) */
-        Log.d(TAG, "Hooking DefaultHTTPClient(HttpParams) for: " + currentPackageName);
-        findAndHookConstructor(DefaultHttpClient.class, HttpParams.class, new XC_MethodHook() {
-            @Override
-            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+            /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
+            /* public DefaultHttpClient(HttpParams params) */
+            Log.d(TAG, "Hooking DefaultHTTPClient(HttpParams) for: " + currentPackageName);
+            findAndHookConstructor(DefaultHttpClient.class, HttpParams.class, new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
 
-                setObjectField(param.thisObject, "defaultParams", (HttpParams) param.args[0]);
-                setObjectField(param.thisObject, "connManager", getSCCM());
-            }
-        });
+                    setObjectField(param.thisObject, "defaultParams", (HttpParams) param.args[0]);
+                    setObjectField(param.thisObject, "connManager", getSCCM());
+                }
+            });
 
-        /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
-        /* public DefaultHttpClient(ClientConnectionManager conman, HttpParams params) */
-        Log.d(TAG, "Hooking DefaultHTTPClient(ClientConnectionManager, HttpParams) for: " + currentPackageName);
-        findAndHookConstructor(DefaultHttpClient.class, ClientConnectionManager.class, HttpParams.class, new XC_MethodHook() {
-            @Override
-            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+            /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
+            /* public DefaultHttpClient(ClientConnectionManager conman, HttpParams params) */
+            Log.d(TAG, "Hooking DefaultHTTPClient(ClientConnectionManager, HttpParams) for: " + currentPackageName);
+            findAndHookConstructor(DefaultHttpClient.class, ClientConnectionManager.class, HttpParams.class, new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
 
-                HttpParams params = (HttpParams) param.args[1];
+                    HttpParams params = (HttpParams) param.args[1];
 
-                setObjectField(param.thisObject, "defaultParams", params);
-                setObjectField(param.thisObject, "connManager", getCCM(param.args[0], params));
-            }
-        });
+                    setObjectField(param.thisObject, "defaultParams", params);
+                    setObjectField(param.thisObject, "connManager", getCCM(param.args[0], params));
+                }
+            });
+        }
 
         findAndHookMethod(X509TrustManagerExtensions.class, "checkServerTrusted", X509Certificate[].class, String.class, String.class, new XC_MethodReplacement() {
             @Override
@@ -320,22 +323,27 @@ public class Main implements IXposedHookLoadPackage {
                         }
                     });
 
-            findAndHookMethod("com.android.org.conscrypt.TrustManagerImpl", lpparam.classLoader, "checkTrusted", X509Certificate[].class, String.class, SSLSession.class, SSLParameters.class, boolean.class, new XC_MethodReplacement() {
-                @Override
-                protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                    ArrayList<X509Certificate> list = new ArrayList<X509Certificate>();
-                    return list;
-                }
-            });
+            try {
+                findAndHookMethod("com.android.org.conscrypt.TrustManagerImpl", lpparam.classLoader, "checkTrusted", X509Certificate[].class, String.class, SSLSession.class, SSLParameters.class, boolean.class, new XC_MethodReplacement() {
+                    @Override
+                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                        ArrayList<X509Certificate> list = new ArrayList<X509Certificate>();
+                        return list;
+                    }
+                });
 
 
-            findAndHookMethod("com.android.org.conscrypt.TrustManagerImpl", lpparam.classLoader, "checkTrusted", X509Certificate[].class, byte[].class, byte[].class, String.class, String.class, boolean.class, new XC_MethodReplacement() {
-                @Override
-                protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                    ArrayList<X509Certificate> list = new ArrayList<X509Certificate>();
-                    return list;
-                }
-            });
+                findAndHookMethod("com.android.org.conscrypt.TrustManagerImpl", lpparam.classLoader, "checkTrusted", X509Certificate[].class, byte[].class, byte[].class, String.class, String.class, boolean.class, new XC_MethodReplacement() {
+                    @Override
+                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                        ArrayList<X509Certificate> list = new ArrayList<X509Certificate>();
+                        return list;
+                    }
+                });
+            } catch (NoSuchMethodError e) {
+
+            }
+
         }
 
     } // End Hooks
@@ -346,6 +354,15 @@ public class Main implements IXposedHookLoadPackage {
 
         try {
             Class.forName("com.android.org.conscrypt.TrustManagerImpl");
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+        return true;
+    }
+
+    public boolean hasDefaultHTTPClient() {
+        try {
+            Class.forName("org.apache.http.impl.client.DefaultHttpClient");
         } catch (ClassNotFoundException e) {
             return false;
         }
@@ -552,7 +569,7 @@ public class Main implements IXposedHookLoadPackage {
                             return null;
                         }
                     });
-        } catch (ClassNotFoundException e) {
+        } catch (XposedHelpers.ClassNotFoundError | ClassNotFoundException e) {
             Log.d(TAG, "OKHTTP 4.2.0+ not found in " + currentPackageName + " -- not hooking");
             // pass
         }
