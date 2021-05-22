@@ -533,6 +533,19 @@ public class Main implements IXposedHookLoadPackage {
             // pass
         }
 
+        try {
+            classLoader.loadClass("okhttp3.CertificatePinner");
+            findAndHookMethod("okhttp3.CertificatePinner",
+                    classLoader,
+                    "check",
+                    String.class,
+                    List.class,
+                    DO_NOTHING);
+        } catch (XposedHelpers.ClassNotFoundError | ClassNotFoundException | NoSuchMethodError e) {
+            Log.d(TAG, "OKHTTP 4.2.0+ (check) not found in " + currentPackageName + " -- not hooking");
+            // pass
+        }
+
     }
 
     void processHttpClientAndroidLib(ClassLoader classLoader) {
