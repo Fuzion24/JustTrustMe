@@ -119,44 +119,48 @@ public class Main implements IXposedHookLoadPackage {
 
         /* external/apache-http/src/org/apache/http/conn/ssl/SSLSocketFactory.java */
         /* public SSLSocketFactory( ... ) */
-        Log.d(TAG, "Hooking SSLSocketFactory(String, KeyStore, String, KeyStore) for: " + currentPackageName);
-        findAndHookConstructor(SSLSocketFactory.class, String.class, KeyStore.class, String.class, KeyStore.class,
-                SecureRandom.class, HostNameResolver.class, new XC_MethodHook() {
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+        try {
+            Log.d(TAG, "Hooking SSLSocketFactory(String, KeyStore, String, KeyStore) for: " + currentPackageName);
+            findAndHookConstructor(SSLSocketFactory.class, String.class, KeyStore.class, String.class, KeyStore.class,
+                    SecureRandom.class, HostNameResolver.class, new XC_MethodHook() {
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
 
-                        String algorithm = (String) param.args[0];
-                        KeyStore keystore = (KeyStore) param.args[1];
-                        String keystorePassword = (String) param.args[2];
-                        SecureRandom random = (SecureRandom) param.args[4];
+                            String algorithm = (String) param.args[0];
+                            KeyStore keystore = (KeyStore) param.args[1];
+                            String keystorePassword = (String) param.args[2];
+                            SecureRandom random = (SecureRandom) param.args[4];
 
-                        KeyManager[] keymanagers = null;
-                        TrustManager[] trustmanagers = null;
+                            KeyManager[] keymanagers = null;
+                            TrustManager[] trustmanagers = null;
 
-                        if (keystore != null) {
-                            keymanagers = (KeyManager[]) callStaticMethod(SSLSocketFactory.class, "createKeyManagers", keystore, keystorePassword);
+                            if (keystore != null) {
+                                keymanagers = (KeyManager[]) callStaticMethod(SSLSocketFactory.class, "createKeyManagers", keystore, keystorePassword);
+                            }
+
+                            trustmanagers = new TrustManager[]{new ImSureItsLegitTrustManager()};
+
+                            setObjectField(param.thisObject, "sslcontext", SSLContext.getInstance(algorithm));
+                            callMethod(getObjectField(param.thisObject, "sslcontext"), "init", keymanagers, trustmanagers, random);
+                            setObjectField(param.thisObject, "socketfactory",
+                                    callMethod(getObjectField(param.thisObject, "sslcontext"), "getSocketFactory"));
                         }
 
-                        trustmanagers = new TrustManager[]{new ImSureItsLegitTrustManager()};
-
-                        setObjectField(param.thisObject, "sslcontext", SSLContext.getInstance(algorithm));
-                        callMethod(getObjectField(param.thisObject, "sslcontext"), "init", keymanagers, trustmanagers, random);
-                        setObjectField(param.thisObject, "socketfactory",
-                                callMethod(getObjectField(param.thisObject, "sslcontext"), "getSocketFactory"));
-                    }
-
-                });
+                    });
 
 
-        /* external/apache-http/src/org/apache/http/conn/ssl/SSLSocketFactory.java */
-        /* public static SSLSocketFactory getSocketFactory() */
-        Log.d(TAG, "Hooking static SSLSocketFactory(String, KeyStore, String, KeyStore) for: " + currentPackageName);
-        findAndHookMethod("org.apache.http.conn.ssl.SSLSocketFactory", lpparam.classLoader, "getSocketFactory", new XC_MethodReplacement() {
-            @Override
-            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                return (SSLSocketFactory) newInstance(SSLSocketFactory.class);
-            }
-        });
+            /* external/apache-http/src/org/apache/http/conn/ssl/SSLSocketFactory.java */
+            /* public static SSLSocketFactory getSocketFactory() */
+            Log.d(TAG, "Hooking static SSLSocketFactory(String, KeyStore, String, KeyStore) for: " + currentPackageName);
+            findAndHookMethod("org.apache.http.conn.ssl.SSLSocketFactory", lpparam.classLoader, "getSocketFactory", new XC_MethodReplacement() {
+                @Override
+                protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                    return (SSLSocketFactory) newInstance(SSLSocketFactory.class);
+                }
+            });
+        } catch (NoClassDefFoundError e) {
+            Log.d(TAG, "NoClassDefFoundError SSLSocketFactory HostNameResolver for: " + currentPackageName);
+        }
 
         /* external/apache-http/src/org/apache/http/conn/ssl/SSLSocketFactory.java */
         /* public boolean isSecure(Socket) */
@@ -343,9 +347,7 @@ public class Main implements IXposedHookLoadPackage {
             SSLContext sslContext = SSLContext.getInstance("TLS");
             sslContext.init(null, new TrustManager[]{new ImSureItsLegitTrustManager()}, null);
             return sslContext.getSocketFactory();
-        } catch (NoSuchAlgorithmException e) {
-            return null;
-        } catch (KeyManagementException e) {
+        } catch (NoSuchAlgorithmException | KeyManagementException e) {
             return null;
         }
     }
