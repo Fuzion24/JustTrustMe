@@ -46,6 +46,7 @@ import de.robv.android.xposed.XC_MethodReplacement;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
+import static de.robv.android.xposed.XC_MethodReplacement.DO_NOTHING;
 import static de.robv.android.xposed.XposedHelpers.callMethod;
 import static de.robv.android.xposed.XposedHelpers.callStaticMethod;
 import static de.robv.android.xposed.XposedHelpers.findAndHookConstructor;
@@ -114,12 +115,7 @@ public class Main implements IXposedHookLoadPackage {
             }
         });
 
-        findAndHookMethod("android.security.net.config.NetworkSecurityTrustManager", lpparam.classLoader, "checkPins", List.class, new XC_MethodReplacement() {
-            @Override
-            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                return null;
-            }
-        });
+        findAndHookMethod("android.security.net.config.NetworkSecurityTrustManager", lpparam.classLoader, "checkPins", List.class, DO_NOTHING);
 
         /* external/apache-http/src/org/apache/http/conn/ssl/SSLSocketFactory.java */
         /* public SSLSocketFactory( ... ) */
@@ -165,12 +161,7 @@ public class Main implements IXposedHookLoadPackage {
         /* external/apache-http/src/org/apache/http/conn/ssl/SSLSocketFactory.java */
         /* public boolean isSecure(Socket) */
         Log.d(TAG, "Hooking SSLSocketFactory(Socket) for: " + currentPackageName);
-        findAndHookMethod("org.apache.http.conn.ssl.SSLSocketFactory", lpparam.classLoader, "isSecure", Socket.class, new XC_MethodReplacement() {
-            @Override
-            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                return true;
-            }
-        });
+        findAndHookMethod("org.apache.http.conn.ssl.SSLSocketFactory", lpparam.classLoader, "isSecure", Socket.class, DO_NOTHING);
 
         /* JSSE Hooks */
         /* libcore/luni/src/main/java/javax/net/ssl/TrustManagerFactory.java */
@@ -196,34 +187,17 @@ public class Main implements IXposedHookLoadPackage {
         /* public void setDefaultHostnameVerifier(HostnameVerifier) */
         Log.d(TAG, "Hooking HttpsURLConnection.setDefaultHostnameVerifier for: " + currentPackageName);
         findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setDefaultHostnameVerifier",
-                HostnameVerifier.class, new XC_MethodReplacement() {
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return null;
-                    }
-                });
+                HostnameVerifier.class, DO_NOTHING);
 
         /* libcore/luni/src/main/java/javax/net/ssl/HttpsURLConnection.java */
         /* public void setSSLSocketFactory(SSLSocketFactory) */
         Log.d(TAG, "Hooking HttpsURLConnection.setSSLSocketFactory for: " + currentPackageName);
-        findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setSSLSocketFactory", javax.net.ssl.SSLSocketFactory.class,
-                new XC_MethodReplacement() {
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return null;
-                    }
-                });
+        findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setSSLSocketFactory", javax.net.ssl.SSLSocketFactory.class, DO_NOTHING);
 
         /* libcore/luni/src/main/java/javax/net/ssl/HttpsURLConnection.java */
         /* public void setHostnameVerifier(HostNameVerifier) */
         Log.d(TAG, "Hooking HttpsURLConnection.setHostnameVerifier for: " + currentPackageName);
-        findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setHostnameVerifier", HostnameVerifier.class,
-                new XC_MethodReplacement() {
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return null;
-                    }
-                });
+        findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setHostnameVerifier", HostnameVerifier.class, DO_NOTHING);
 
 
         /* WebView Hooks */
@@ -245,12 +219,7 @@ public class Main implements IXposedHookLoadPackage {
         Log.d(TAG, "Hooking WebViewClient.onReceivedSslError(WebView, int, string, string) for: " + currentPackageName);
 
         findAndHookMethod("android.webkit.WebViewClient", lpparam.classLoader, "onReceivedError",
-                WebView.class, int.class, String.class, String.class, new XC_MethodReplacement() {
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return null;
-                    }
-                });
+                WebView.class, int.class, String.class, String.class, DO_NOTHING);
 
         //SSLContext.init >> (null,ImSureItsLegitTrustManager,null)
         findAndHookMethod("javax.net.ssl.SSLContext", lpparam.classLoader, "init", KeyManager[].class, TrustManager[].class, SecureRandom.class, new XC_MethodHook() {
@@ -504,12 +473,7 @@ public class Main implements IXposedHookLoadPackage {
                     "check",
                     String.class,
                     List.class,
-                    new XC_MethodReplacement() {
-                        @Override
-                        protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
-                            return null;
-                        }
-                    });
+                    DO_NOTHING);
         } catch (ClassNotFoundException e) {
             Log.d(TAG, "OKHTTP 3.x not found in " + currentPackageName + " -- not hooking");
             // pass
@@ -563,14 +527,9 @@ public class Main implements IXposedHookLoadPackage {
                     "check$okhttp",
                     String.class,
                     "kotlin.jvm.functions.Function0",
-                    new XC_MethodReplacement() {
-                        @Override
-                        protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
-                            return null;
-                        }
-                    });
-        } catch (XposedHelpers.ClassNotFoundError | ClassNotFoundException e) {
-            Log.d(TAG, "OKHTTP 4.2.0+ not found in " + currentPackageName + " -- not hooking");
+                    DO_NOTHING);
+        } catch (XposedHelpers.ClassNotFoundError | ClassNotFoundException | NoSuchMethodError e) {
+            Log.d(TAG, "OKHTTP 4.2.0+ (check$okhttp) not found in " + currentPackageName + " -- not hooking");
             // pass
         }
 
@@ -585,12 +544,7 @@ public class Main implements IXposedHookLoadPackage {
             classLoader.loadClass("ch.boye.httpclientandroidlib.conn.ssl.AbstractVerifier");
             findAndHookMethod("ch.boye.httpclientandroidlib.conn.ssl.AbstractVerifier", classLoader, "verify",
                     String.class, String[].class, String[].class, boolean.class,
-                    new XC_MethodReplacement() {
-                        @Override
-                        protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
-                            return null;
-                        }
-                    });
+                    DO_NOTHING);
         } catch (ClassNotFoundException e) {
             // pass
             Log.d(TAG, "httpclientandroidlib not found in " + currentPackageName + "-- not hooking");
