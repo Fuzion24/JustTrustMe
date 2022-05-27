@@ -2,7 +2,6 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 30
-    buildToolsVersion '25.0.2'
     defaultConfig {
         applicationId 'just.trust.me'
         minSdkVersion 16
@@ -22,6 +21,6 @@ android {
 }
 
 dependencies {
-    provided fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'org.apache.httpcomponents:httpcore:4.4.2'
+    compileOnly fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'org.apache.httpcomponents:httpcore:4.4.2'
 }
