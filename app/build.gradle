@@ -1,12 +1,11 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 22
-    buildToolsVersion '25.0.2'
+    compileSdkVersion 30
     defaultConfig {
         applicationId 'just.trust.me'
         minSdkVersion 16
-        targetSdkVersion 23
+        targetSdkVersion 30
         versionCode 3
         versionName '.3'
     }
@@ -18,8 +17,10 @@ android {
     }
     productFlavors {
     }
+    useLibrary 'org.apache.http.legacy'
 }
 
 dependencies {
-    provided fileTree(dir: 'libs', include: ['*.jar'])
+    compileOnly fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'org.apache.httpcomponents:httpcore:4.4.2'
 }

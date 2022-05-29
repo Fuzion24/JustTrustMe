@@ -43,8 +43,10 @@ import javax.net.ssl.X509TrustManager;
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XC_MethodReplacement;
+import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
+import static de.robv.android.xposed.XC_MethodReplacement.DO_NOTHING;
 import static de.robv.android.xposed.XposedHelpers.callMethod;
 import static de.robv.android.xposed.XposedHelpers.callStaticMethod;
 import static de.robv.android.xposed.XposedHelpers.findAndHookConstructor;
@@ -68,41 +70,43 @@ public class Main implements IXposedHookLoadPackage {
         /* Apache Hooks */
         /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
         /* public DefaultHttpClient() */
-        Log.d(TAG, "Hooking DefaultHTTPClient for: " + currentPackageName);
-        findAndHookConstructor(DefaultHttpClient.class, new XC_MethodHook() {
-            @Override
-            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+        if (hasDefaultHTTPClient()) {
+            Log.d(TAG, "Hooking DefaultHTTPClient for: " + currentPackageName);
+            findAndHookConstructor(DefaultHttpClient.class, new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
 
-                setObjectField(param.thisObject, "defaultParams", null);
-                setObjectField(param.thisObject, "connManager", getSCCM());
-            }
-        });
+                    setObjectField(param.thisObject, "defaultParams", null);
+                    setObjectField(param.thisObject, "connManager", getSCCM());
+                }
+            });
 
-        /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
-        /* public DefaultHttpClient(HttpParams params) */
-        Log.d(TAG, "Hooking DefaultHTTPClient(HttpParams) for: " + currentPackageName);
-        findAndHookConstructor(DefaultHttpClient.class, HttpParams.class, new XC_MethodHook() {
-            @Override
-            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+            /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
+            /* public DefaultHttpClient(HttpParams params) */
+            Log.d(TAG, "Hooking DefaultHTTPClient(HttpParams) for: " + currentPackageName);
+            findAndHookConstructor(DefaultHttpClient.class, HttpParams.class, new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
 
-                setObjectField(param.thisObject, "defaultParams", (HttpParams) param.args[0]);
-                setObjectField(param.thisObject, "connManager", getSCCM());
-            }
-        });
+                    setObjectField(param.thisObject, "defaultParams", (HttpParams) param.args[0]);
+                    setObjectField(param.thisObject, "connManager", getSCCM());
+                }
+            });
 
-        /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
-        /* public DefaultHttpClient(ClientConnectionManager conman, HttpParams params) */
-        Log.d(TAG, "Hooking DefaultHTTPClient(ClientConnectionManager, HttpParams) for: " + currentPackageName);
-        findAndHookConstructor(DefaultHttpClient.class, ClientConnectionManager.class, HttpParams.class, new XC_MethodHook() {
-            @Override
-            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+            /* external/apache-http/src/org/apache/http/impl/client/DefaultHttpClient.java */
+            /* public DefaultHttpClient(ClientConnectionManager conman, HttpParams params) */
+            Log.d(TAG, "Hooking DefaultHTTPClient(ClientConnectionManager, HttpParams) for: " + currentPackageName);
+            findAndHookConstructor(DefaultHttpClient.class, ClientConnectionManager.class, HttpParams.class, new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
 
-                HttpParams params = (HttpParams) param.args[1];
+                    HttpParams params = (HttpParams) param.args[1];
 
-                setObjectField(param.thisObject, "defaultParams", params);
-                setObjectField(param.thisObject, "connManager", getCCM(param.args[0], params));
-            }
-        });
+                    setObjectField(param.thisObject, "defaultParams", params);
+                    setObjectField(param.thisObject, "connManager", getCCM(param.args[0], params));
+                }
+            });
+        }
 
         findAndHookMethod(X509TrustManagerExtensions.class, "checkServerTrusted", X509Certificate[].class, String.class, String.class, new XC_MethodReplacement() {
             @Override
@@ -111,63 +115,57 @@ public class Main implements IXposedHookLoadPackage {
             }
         });
 
-        findAndHookMethod("android.security.net.config.NetworkSecurityTrustManager", lpparam.classLoader, "checkPins", List.class, new XC_MethodReplacement() {
-            @Override
-            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                return null;
-            }
-        });
+        findAndHookMethod("android.security.net.config.NetworkSecurityTrustManager", lpparam.classLoader, "checkPins", List.class, DO_NOTHING);
 
         /* external/apache-http/src/org/apache/http/conn/ssl/SSLSocketFactory.java */
         /* public SSLSocketFactory( ... ) */
-        Log.d(TAG, "Hooking SSLSocketFactory(String, KeyStore, String, KeyStore) for: " + currentPackageName);
-        findAndHookConstructor(SSLSocketFactory.class, String.class, KeyStore.class, String.class, KeyStore.class,
-                SecureRandom.class, HostNameResolver.class, new XC_MethodHook() {
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+        try {
+            Log.d(TAG, "Hooking SSLSocketFactory(String, KeyStore, String, KeyStore) for: " + currentPackageName);
+            findAndHookConstructor(SSLSocketFactory.class, String.class, KeyStore.class, String.class, KeyStore.class,
+                    SecureRandom.class, HostNameResolver.class, new XC_MethodHook() {
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
 
-                        String algorithm = (String) param.args[0];
-                        KeyStore keystore = (KeyStore) param.args[1];
-                        String keystorePassword = (String) param.args[2];
-                        SecureRandom random = (SecureRandom) param.args[4];
+                            String algorithm = (String) param.args[0];
+                            KeyStore keystore = (KeyStore) param.args[1];
+                            String keystorePassword = (String) param.args[2];
+                            SecureRandom random = (SecureRandom) param.args[4];
 
-                        KeyManager[] keymanagers = null;
-                        TrustManager[] trustmanagers = null;
+                            KeyManager[] keymanagers = null;
+                            TrustManager[] trustmanagers = null;
 
-                        if (keystore != null) {
-                            keymanagers = (KeyManager[]) callStaticMethod(SSLSocketFactory.class, "createKeyManagers", keystore, keystorePassword);
+                            if (keystore != null) {
+                                keymanagers = (KeyManager[]) callStaticMethod(SSLSocketFactory.class, "createKeyManagers", keystore, keystorePassword);
+                            }
+
+                            trustmanagers = new TrustManager[]{new ImSureItsLegitTrustManager()};
+
+                            setObjectField(param.thisObject, "sslcontext", SSLContext.getInstance(algorithm));
+                            callMethod(getObjectField(param.thisObject, "sslcontext"), "init", keymanagers, trustmanagers, random);
+                            setObjectField(param.thisObject, "socketfactory",
+                                    callMethod(getObjectField(param.thisObject, "sslcontext"), "getSocketFactory"));
                         }
 
-                        trustmanagers = new TrustManager[]{new ImSureItsLegitTrustManager()};
-
-                        setObjectField(param.thisObject, "sslcontext", SSLContext.getInstance(algorithm));
-                        callMethod(getObjectField(param.thisObject, "sslcontext"), "init", keymanagers, trustmanagers, random);
-                        setObjectField(param.thisObject, "socketfactory",
-                                callMethod(getObjectField(param.thisObject, "sslcontext"), "getSocketFactory"));
-                    }
-
-                });
+                    });
 
 
-        /* external/apache-http/src/org/apache/http/conn/ssl/SSLSocketFactory.java */
-        /* public static SSLSocketFactory getSocketFactory() */
-        Log.d(TAG, "Hooking static SSLSocketFactory(String, KeyStore, String, KeyStore) for: " + currentPackageName);
-        findAndHookMethod("org.apache.http.conn.ssl.SSLSocketFactory", lpparam.classLoader, "getSocketFactory", new XC_MethodReplacement() {
-            @Override
-            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                return (SSLSocketFactory) newInstance(SSLSocketFactory.class);
-            }
-        });
+            /* external/apache-http/src/org/apache/http/conn/ssl/SSLSocketFactory.java */
+            /* public static SSLSocketFactory getSocketFactory() */
+            Log.d(TAG, "Hooking static SSLSocketFactory(String, KeyStore, String, KeyStore) for: " + currentPackageName);
+            findAndHookMethod("org.apache.http.conn.ssl.SSLSocketFactory", lpparam.classLoader, "getSocketFactory", new XC_MethodReplacement() {
+                @Override
+                protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                    return (SSLSocketFactory) newInstance(SSLSocketFactory.class);
+                }
+            });
+        } catch (NoClassDefFoundError e) {
+            Log.d(TAG, "NoClassDefFoundError SSLSocketFactory HostNameResolver for: " + currentPackageName);
+        }
 
         /* external/apache-http/src/org/apache/http/conn/ssl/SSLSocketFactory.java */
         /* public boolean isSecure(Socket) */
         Log.d(TAG, "Hooking SSLSocketFactory(Socket) for: " + currentPackageName);
-        findAndHookMethod("org.apache.http.conn.ssl.SSLSocketFactory", lpparam.classLoader, "isSecure", Socket.class, new XC_MethodReplacement() {
-            @Override
-            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                return true;
-            }
-        });
+        findAndHookMethod("org.apache.http.conn.ssl.SSLSocketFactory", lpparam.classLoader, "isSecure", Socket.class, DO_NOTHING);
 
         /* JSSE Hooks */
         /* libcore/luni/src/main/java/javax/net/ssl/TrustManagerFactory.java */
@@ -193,34 +191,17 @@ public class Main implements IXposedHookLoadPackage {
         /* public void setDefaultHostnameVerifier(HostnameVerifier) */
         Log.d(TAG, "Hooking HttpsURLConnection.setDefaultHostnameVerifier for: " + currentPackageName);
         findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setDefaultHostnameVerifier",
-                HostnameVerifier.class, new XC_MethodReplacement() {
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return null;
-                    }
-                });
+                HostnameVerifier.class, DO_NOTHING);
 
         /* libcore/luni/src/main/java/javax/net/ssl/HttpsURLConnection.java */
         /* public void setSSLSocketFactory(SSLSocketFactory) */
         Log.d(TAG, "Hooking HttpsURLConnection.setSSLSocketFactory for: " + currentPackageName);
-        findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setSSLSocketFactory", javax.net.ssl.SSLSocketFactory.class,
-                new XC_MethodReplacement() {
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return null;
-                    }
-                });
+        findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setSSLSocketFactory", javax.net.ssl.SSLSocketFactory.class, DO_NOTHING);
 
         /* libcore/luni/src/main/java/javax/net/ssl/HttpsURLConnection.java */
         /* public void setHostnameVerifier(HostNameVerifier) */
         Log.d(TAG, "Hooking HttpsURLConnection.setHostnameVerifier for: " + currentPackageName);
-        findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setHostnameVerifier", HostnameVerifier.class,
-                new XC_MethodReplacement() {
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return null;
-                    }
-                });
+        findAndHookMethod("javax.net.ssl.HttpsURLConnection", lpparam.classLoader, "setHostnameVerifier", HostnameVerifier.class, DO_NOTHING);
 
 
         /* WebView Hooks */
@@ -242,12 +223,7 @@ public class Main implements IXposedHookLoadPackage {
         Log.d(TAG, "Hooking WebViewClient.onReceivedSslError(WebView, int, string, string) for: " + currentPackageName);
 
         findAndHookMethod("android.webkit.WebViewClient", lpparam.classLoader, "onReceivedError",
-                WebView.class, int.class, String.class, String.class, new XC_MethodReplacement() {
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return null;
-                    }
-                });
+                WebView.class, int.class, String.class, String.class, DO_NOTHING);
 
         //SSLContext.init >> (null,ImSureItsLegitTrustManager,null)
         findAndHookMethod("javax.net.ssl.SSLContext", lpparam.classLoader, "init", KeyManager[].class, TrustManager[].class, SecureRandom.class, new XC_MethodHook() {
@@ -320,22 +296,27 @@ public class Main implements IXposedHookLoadPackage {
                         }
                     });
 
-            findAndHookMethod("com.android.org.conscrypt.TrustManagerImpl", lpparam.classLoader, "checkTrusted", X509Certificate[].class, String.class, SSLSession.class, SSLParameters.class, boolean.class, new XC_MethodReplacement() {
-                @Override
-                protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                    ArrayList<X509Certificate> list = new ArrayList<X509Certificate>();
-                    return list;
-                }
-            });
+            try {
+                findAndHookMethod("com.android.org.conscrypt.TrustManagerImpl", lpparam.classLoader, "checkTrusted", X509Certificate[].class, String.class, SSLSession.class, SSLParameters.class, boolean.class, new XC_MethodReplacement() {
+                    @Override
+                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                        ArrayList<X509Certificate> list = new ArrayList<X509Certificate>();
+                        return list;
+                    }
+                });
 
 
-            findAndHookMethod("com.android.org.conscrypt.TrustManagerImpl", lpparam.classLoader, "checkTrusted", X509Certificate[].class, byte[].class, byte[].class, String.class, String.class, boolean.class, new XC_MethodReplacement() {
-                @Override
-                protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                    ArrayList<X509Certificate> list = new ArrayList<X509Certificate>();
-                    return list;
-                }
-            });
+                findAndHookMethod("com.android.org.conscrypt.TrustManagerImpl", lpparam.classLoader, "checkTrusted", X509Certificate[].class, byte[].class, byte[].class, String.class, String.class, boolean.class, new XC_MethodReplacement() {
+                    @Override
+                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                        ArrayList<X509Certificate> list = new ArrayList<X509Certificate>();
+                        return list;
+                    }
+                });
+            } catch (NoSuchMethodError e) {
+
+            }
+
         }
 
     } // End Hooks
@@ -352,14 +333,21 @@ public class Main implements IXposedHookLoadPackage {
         return true;
     }
 
+    public boolean hasDefaultHTTPClient() {
+        try {
+            Class.forName("org.apache.http.impl.client.DefaultHttpClient");
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+        return true;
+    }
+
     private javax.net.ssl.SSLSocketFactory getEmptySSLFactory() {
         try {
             SSLContext sslContext = SSLContext.getInstance("TLS");
             sslContext.init(null, new TrustManager[]{new ImSureItsLegitTrustManager()}, null);
             return sslContext.getSocketFactory();
-        } catch (NoSuchAlgorithmException e) {
-            return null;
-        } catch (KeyManagementException e) {
+        } catch (NoSuchAlgorithmException | KeyManagementException e) {
             return null;
         }
     }
@@ -487,12 +475,7 @@ public class Main implements IXposedHookLoadPackage {
                     "check",
                     String.class,
                     List.class,
-                    new XC_MethodReplacement() {
-                        @Override
-                        protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
-                            return null;
-                        }
-                    });
+                    DO_NOTHING);
         } catch (ClassNotFoundException e) {
             Log.d(TAG, "OKHTTP 3.x not found in " + currentPackageName + " -- not hooking");
             // pass
@@ -546,14 +529,22 @@ public class Main implements IXposedHookLoadPackage {
                     "check$okhttp",
                     String.class,
                     "kotlin.jvm.functions.Function0",
-                    new XC_MethodReplacement() {
-                        @Override
-                        protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
-                            return null;
-                        }
-                    });
-        } catch (ClassNotFoundException e) {
-            Log.d(TAG, "OKHTTP 4.2.0+ not found in " + currentPackageName + " -- not hooking");
+                    DO_NOTHING);
+        } catch (XposedHelpers.ClassNotFoundError | ClassNotFoundException | NoSuchMethodError e) {
+            Log.d(TAG, "OKHTTP 4.2.0+ (check$okhttp) not found in " + currentPackageName + " -- not hooking");
+            // pass
+        }
+
+        try {
+            classLoader.loadClass("okhttp3.CertificatePinner");
+            findAndHookMethod("okhttp3.CertificatePinner",
+                    classLoader,
+                    "check",
+                    String.class,
+                    List.class,
+                    DO_NOTHING);
+        } catch (XposedHelpers.ClassNotFoundError | ClassNotFoundException | NoSuchMethodError e) {
+            Log.d(TAG, "OKHTTP 4.2.0+ (check) not found in " + currentPackageName + " -- not hooking");
             // pass
         }
 
@@ -568,12 +559,7 @@ public class Main implements IXposedHookLoadPackage {
             classLoader.loadClass("ch.boye.httpclientandroidlib.conn.ssl.AbstractVerifier");
             findAndHookMethod("ch.boye.httpclientandroidlib.conn.ssl.AbstractVerifier", classLoader, "verify",
                     String.class, String[].class, String[].class, boolean.class,
-                    new XC_MethodReplacement() {
-                        @Override
-                        protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
-                            return null;
-                        }
-                    });
+                    DO_NOTHING);
         } catch (ClassNotFoundException e) {
             // pass
             Log.d(TAG, "httpclientandroidlib not found in " + currentPackageName + "-- not hooking");
