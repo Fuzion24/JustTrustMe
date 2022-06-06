@@ -420,7 +420,8 @@ public class Main implements IXposedHookLoadPackage {
         Log.d(TAG, "Hooking org.xutils.http.RequestParams.setSslSocketFactory(SSLSocketFactory) (3) for: " + currentPackageName);
         try {
             classLoader.loadClass("org.xutils.http.RequestParams");
-            findAndHookMethod("org.xutils.http.RequestParams", classLoader, "setSslSocketFactory", javax.net.ssl.SSLSocketFactory.class, new XC_MethodHook() {
+            findAndHookMethod("org.xutils.http.RequestParams", classLoader, "setSslSocketFactory", javax.net.ssl.SSLSocketFactory.class,
+                    new XC_MethodHook() {
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                     super.beforeHookedMethod(param);
@@ -548,6 +549,34 @@ public class Main implements IXposedHookLoadPackage {
             // pass
         }
 
+        try {
+            classLoader.loadClass("okhttp3.OkHttpClient$Builder");
+            findAndHookMethod("okhttp3.OkHttpClient$Builder",
+                    classLoader,
+                    "proxy",
+                    java.net.Proxy.class,
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                            super.beforeHookedMethod(param);
+                            try {
+                                // set proxy to default
+                                param.args[0] = null;
+                            } catch (Exception e) {
+                                Log.d(TAG, "Hook failed");
+                            }
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        } catch (XposedHelpers.ClassNotFoundError | ClassNotFoundException | NoSuchMethodError e) {
+            Log.d(TAG, "OKHTTP (builder.proxy) not found in " + currentPackageName + " -- not hooking");
+            Log.d(TAG, "processOkHttp: " + Log.getStackTraceString(e));
+        }
     }
 
     void processHttpClientAndroidLib(ClassLoader classLoader) {
