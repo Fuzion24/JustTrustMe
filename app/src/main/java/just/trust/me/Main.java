@@ -1,9 +1,12 @@
 package just.trust.me;
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.net.http.SslError;
 import android.net.http.X509TrustManagerExtensions;
+import android.os.Build;
 import android.util.Log;
+import android.util.Pair;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebView;
 
@@ -35,9 +38,11 @@ import java.util.List;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509ExtendedTrustManager;
 import javax.net.ssl.X509TrustManager;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
@@ -138,7 +143,7 @@ public class Main implements IXposedHookLoadPackage {
                                 keymanagers = (KeyManager[]) callStaticMethod(SSLSocketFactory.class, "createKeyManagers", keystore, keystorePassword);
                             }
 
-                            trustmanagers = new TrustManager[]{new ImSureItsLegitTrustManager()};
+                            trustmanagers = new TrustManager[]{getTrustManager()};
 
                             setObjectField(param.thisObject, "sslcontext", SSLContext.getInstance(algorithm));
                             callMethod(getObjectField(param.thisObject, "sslcontext"), "init", keymanagers, trustmanagers, random);
@@ -183,7 +188,7 @@ public class Main implements IXposedHookLoadPackage {
                         return;
                 }
 
-                param.setResult(new TrustManager[]{new ImSureItsLegitTrustManager()});
+                param.setResult(new TrustManager[]{getTrustManager()});
             }
         });
 
@@ -232,7 +237,7 @@ public class Main implements IXposedHookLoadPackage {
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
 
                 param.args[0] = null;
-                param.args[1] = new TrustManager[]{new ImSureItsLegitTrustManager()};
+                param.args[1] = new TrustManager[]{getTrustManager()};
                 param.args[2] = null;
 
             }
@@ -345,7 +350,7 @@ public class Main implements IXposedHookLoadPackage {
     private javax.net.ssl.SSLSocketFactory getEmptySSLFactory() {
         try {
             SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, new TrustManager[]{new ImSureItsLegitTrustManager()}, null);
+            sslContext.init(null, new TrustManager[]{getTrustManager()}, null);
             return sslContext.getSocketFactory();
         } catch (NoSuchAlgorithmException | KeyManagementException e) {
             return null;
@@ -566,6 +571,44 @@ public class Main implements IXposedHookLoadPackage {
         }
     }
 
+    @TargetApi(Build.VERSION_CODES.N)
+    private class ImSureItsLegitExtendedTrustManager extends X509ExtendedTrustManager {
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException {
+
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException {
+
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine) throws CertificateException {
+
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine) throws CertificateException {
+
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+
+        }
+
+        @Override
+        public X509Certificate[] getAcceptedIssuers() {
+            return new X509Certificate[0];
+        }
+    }
+
     private class ImSureItsLegitTrustManager implements X509TrustManager {
         @Override
         public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
@@ -583,6 +626,14 @@ public class Main implements IXposedHookLoadPackage {
         @Override
         public X509Certificate[] getAcceptedIssuers() {
             return new X509Certificate[0];
+        }
+    }
+
+    private X509TrustManager getTrustManager() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            return new ImSureItsLegitExtendedTrustManager();
+        } else {
+            return new ImSureItsLegitTrustManager();
         }
     }
 
